@@ -1,4 +1,27 @@
 #######################################################
+##################### Memory Info #####################
+#######################################################
+## Grab memory total from Ohai
+total_memory = node['memory']['total']
+
+## Ohai reports node[:memory][:total] in kB, as in "921756kB"
+mem = total_memory.split("kB")[0].to_i / 1048576 # in GB
+
+# Let's set a sane default in case ohai has decided to screw us.
+node.run_state['es_mem'] = 4
+
+if mem < 64
+  # For systems with less than 32GB of system memory, we'll use half for Elasticsearch
+  node.run_state['es_mem'] = mem / 2
+else
+  # Elasticsearch recommends not using more than 32GB for Elasticearch
+  node.run_state['es_mem'] = 32
+end
+
+# We'll use es_mem later to do a "best effort" elasticsearch configuration
+
+
+#######################################################
 ############### Install Elastic Repos #################
 #######################################################
 yum_repository 'logstash-2.4.x' do
@@ -35,12 +58,9 @@ yum_package 'elasticsearch' do
   allow_downgrade true
 end
 
-yum_package 'bro' do
-  version '2.4.1-1.1'
-  allow_downgrade true
-end
 
-package ['logstash', 'nginx',  'kibana']
+
+package ['logstash', 'nginx', 'java-1.8.0-oracle', 'kibana']
 
 
 ######################################################

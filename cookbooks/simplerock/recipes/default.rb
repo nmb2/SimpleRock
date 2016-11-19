@@ -71,27 +71,6 @@ directory '/data' do
   action :create
 end
 
-#######################################################
-##################### Memory Info #####################
-#######################################################
-## Grab memory total from Ohai
-total_memory = node['memory']['total']
-
-## Ohai reports node[:memory][:total] in kB, as in "921756kB"
-mem = total_memory.split("kB")[0].to_i / 1048576 # in GB
-
-# Let's set a sane default in case ohai has decided to screw us.
-node.run_state['es_mem'] = 4
-
-if mem < 64
-  # For systems with less than 32GB of system memory, we'll use half for Elasticsearch
-  node.run_state['es_mem'] = mem / 2
-else
-  # Elasticsearch recommends not using more than 32GB for Elasticearch
-  node.run_state['es_mem'] = 32
-end
-
-# We'll use es_mem later to do a "best effort" elasticsearch configuration
 
 #######################################################
 ####################### CPU Info ######################
@@ -358,7 +337,7 @@ yum_package 'bro' do
   allow_downgrade true
 end
 
-package ['tcpreplay', 'iptables-services', 'dkms', 'broctl', 'kafka-bro-plugin', 'gperftools-libs', 'git', 'java-1.8.0-oracle', 'kafka',  'jq', 'policycoreutils-python', 'patch', 'vim', 'openssl-devel', 'zlib-devel', 'net-tools', 'lsof', 'htop', 'GeoIP-update', 'GeoIP-devel', 'GeoIP', 'kafkacat', 'stenographer', 'bats', 'nmap-ncat', 'snort', 'daq', 'perl-libwww-perl', 'perl-Crypt-SSLeay', 'perl-Archive-Tar', 'perl-Sys-Syslog', 'perl-LWP-Protocol-https']
+package ['tcpreplay', 'iptables-services', 'dkms', 'broctl', 'kafka-bro-plugin', 'gperftools-libs', 'git', 'kafka',  'jq', 'policycoreutils-python', 'patch', 'vim', 'openssl-devel', 'zlib-devel', 'net-tools', 'lsof', 'htop', 'GeoIP-update', 'GeoIP-devel', 'GeoIP', 'kafkacat', 'stenographer', 'bats', 'nmap-ncat', 'snort', 'daq', 'perl-libwww-perl', 'perl-Crypt-SSLeay', 'perl-Archive-Tar', 'perl-Sys-Syslog', 'perl-LWP-Protocol-https']
 
 ######################################################
 ################## Configure PF_RING #################
