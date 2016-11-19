@@ -545,6 +545,20 @@ end
 
 include_recipe 'elk::default'
 
+######################################################
+#################### Configure Cron ##################
+######################################################
+cron 'es_cleanup_cron' do
+  hour '0'
+  minute '1'
+  command '/usr/local/bin/es_cleanup.sh >/dev/null 2>&1'
+end
+
+cron 'bro_cron' do
+  minute '*/5'
+  command '/opt/bro/bin/broctl cron >/dev/null 2>&1'
+end
+
 
 ######################################################
 ############### Start/Stop/Status Scripts ############
@@ -617,33 +631,7 @@ service 'stenographer' do
   action :disable
 end
 
-######################################################
-######################## NGINX #######################
-######################################################
-template '/etc/nginx/conf.d/rock.conf' do
-  source 'rock.conf.erb'
-end
 
-template '/etc/nginx/nginx.conf' do
-  source 'nginx.conf.erb'
-end
-
-file '/etc/nginx/conf.d/default.conf' do
-  action :delete
-end
-
-file '/etc/nginx/conf.d/example_ssl.conf' do
-  action :delete
-end
-
-execute 'enable_nginx_connect_selinux' do
-  command 'setsebool -P httpd_can_network_connect 1'
-  not_if 'getsebool httpd_can_network_connect | grep -q "on$"'
-end
-
-service 'nginx' do
-  action [ :enable, :start ]
-end
 
 ######################################################
 ######################## SNORT #######################
