@@ -564,8 +564,8 @@ service 'kafka' do
 end
 
 
+include_recipe 'elk::default'
 
-recipe[SimpleRock::elk]
 
 ######################################################
 ############### Start/Stop/Status Scripts ############

@@ -8,5 +8,6 @@ version '0.1.1'
 
 depends 'yum', '~> 3.6.1'
 depends 'packagecloud'
+depends 'elk'
 ## Tabled for now, using dcode's java headless package
 #depends 'java', '~> 1.0'
