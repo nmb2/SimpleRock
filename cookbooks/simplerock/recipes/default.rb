@@ -71,6 +71,27 @@ directory '/data' do
   action :create
 end
 
+#######################################################
+##################### Memory Info #####################
+#######################################################
+## Grab memory total from Ohai
+total_memory = node['memory']['total']
+
+## Ohai reports node[:memory][:total] in kB, as in "921756kB"
+mem = total_memory.split("kB")[0].to_i / 1048576 # in GB
+
+# Let's set a sane default in case ohai has decided to screw us.
+node.run_state['es_mem'] = 4
+
+if mem < 64
+  # For systems with less than 32GB of system memory, we'll use half for Elasticsearch
+  node.run_state['es_mem'] = mem / 2
+else
+  # Elasticsearch recommends not using more than 32GB for Elasticearch
+  node.run_state['es_mem'] = 32
+end
+
+# We'll use es_mem later to do a "best effort" elasticsearch configuration
 
 #######################################################
 ####################### CPU Info ######################
@@ -282,6 +303,7 @@ packagecloud_repo "rocknsm/current" do
 end
 
 
+
 #######################################################
 ################ Install NTOP Repos ###################
 #######################################################
@@ -329,7 +351,6 @@ end
 #######################################################
 ############### Install Core Packages #################
 #######################################################
-#Pinning the ES version until v5 comes out.
 
 
 yum_package 'bro' do
@@ -337,7 +358,14 @@ yum_package 'bro' do
   allow_downgrade true
 end
 
-package ['tcpreplay', 'iptables-services', 'dkms', 'broctl', 'kafka-bro-plugin', 'gperftools-libs', 'git', 'kafka',  'jq', 'policycoreutils-python', 'patch', 'vim', 'openssl-devel', 'zlib-devel', 'net-tools', 'lsof', 'htop', 'GeoIP-update', 'GeoIP-devel', 'GeoIP', 'kafkacat', 'stenographer', 'bats', 'nmap-ncat', 'snort', 'daq', 'perl-libwww-perl', 'perl-Crypt-SSLeay', 'perl-Archive-Tar', 'perl-Sys-Syslog', 'perl-LWP-Protocol-https']
+
+yum_package 'broctl' do
+  version '2.4.1-1.1'
+  allow_downgrade true
+  timeout 90
+end
+
+package ['tcpreplay', 'iptables-services', 'dkms', 'kafka-bro-plugin', 'gperftools-libs', 'git', 'java-1.8.0-oracle', 'kafka',  'nginx', 'jq', 'policycoreutils-python', 'patch', 'vim', 'openssl-devel', 'zlib-devel', 'net-tools', 'lsof', 'htop', 'GeoIP-update', 'GeoIP-devel', 'GeoIP', 'kafkacat', 'stenographer', 'bats', 'nmap-ncat', 'snort', 'daq', 'perl-libwww-perl', 'perl-Crypt-SSLeay', 'perl-Archive-Tar', 'perl-Sys-Syslog', 'perl-LWP-Protocol-https']
 
 ######################################################
 ################## Configure PF_RING #################
@@ -543,22 +571,21 @@ service 'kafka' do
 end
 
 
-include_recipe 'elk::default'
+
+#going to need to add checking for single node or multinode setup
+include_recipe'elk'
+
+
 
 ######################################################
 #################### Configure Cron ##################
 ######################################################
-cron 'es_cleanup_cron' do
-  hour '0'
-  minute '1'
-  command '/usr/local/bin/es_cleanup.sh >/dev/null 2>&1'
-end
+
 
 cron 'bro_cron' do
   minute '*/5'
   command '/opt/bro/bin/broctl cron >/dev/null 2>&1'
 end
-
 
 ######################################################
 ############### Start/Stop/Status Scripts ############
@@ -756,3 +783,4 @@ cron 'pulledpork' do
 end
 
 # To be continued
+
